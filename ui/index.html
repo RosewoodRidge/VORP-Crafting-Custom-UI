@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="app">
+      <div :class="fontClass">
+        <!-- Main crafting interface - only shown when interacting with a crafting station -->
+        <div v-show="visible && language" class="crafting-container">
+          <div class="crafting-header">
+            <h1>{{language.CraftHeader}}</h1>
+          </div>
+
+          <!-- Search and Filter Controls -->
+          <div class="crafting-controls">
+            <div class="search-row">
+              <input 
+                type="text" 
+                class="search-input" 
+                v-model="searchQuery" 
+                :placeholder="language.SearchPlaceholder || 'Search recipes...'"
+              >
+              
+              <div class="inventory-toggle">
+                <label class="toggle">
+                  <input type="checkbox" v-model="filterByInventory">
+                  <span class="toggle-slider"></span>
+                  <span class="toggle-label">{{language.FilterByInventory || 'Show craftable only'}}</span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="category-selector">
+              <div 
+                class="category-chip" 
+                :class="{ active: currentRoute === 'home' }" 
+                @click="currentRoute = 'home'"
+                tabindex="0"
+              >
+                {{language.AllCategories || 'All'}}
+              </div>
+              <div 
+                v-for="(cat, index) in categories" 
+                :key="cat.ident+index" 
+                class="category-chip" 
+                :class="{ active: currentRoute === cat.ident }"
+                :data-category="cat.ident"
+                @click="currentRoute = cat.ident"
+                tabindex="0"
+              >
+                {{cat.text}}
+              </div>
+            </div>
+          </div>
+
+          <!-- Recipe Cards Grid -->
+          <div class="recipes-grid" v-if="currentRoute === 'home'">
+            <div 
+              v-for="(item, index) in filteredItems" 
+              :key="'item-'+index" 
+              class="recipe-card" 
+              :data-category="item.Category"
+              @click="handleItemClick(item)"
+              tabindex="0"
+            >
+              <div class="recipe-card-content">
+                <div class="recipe-card-header">
+                  <div class="recipe-card-image-wrapper">
+                    <div
+                      class="recipe-card-image"
+                      :style="{ backgroundImage: getItemImageUrl(item.Reward && item.Reward.length > 0 ? item.Reward[0].name : 'placeholder') }"
+                      role="img" :aria-label="item.Text"
+                    ></div>
+                  </div>
+                  <div class="recipe-card-info">
+                    <h3 class="recipe-card-title">{{item.Text}}</h3>
+                    <!-- Replace SubText with item limit from Reward -->
+                    <p v-if="item.Reward && item.Reward.length > 0 && getItemLimit(item.Reward[0].name)" class="recipe-card-subtext">
+                      {{language.InvMax || 'InvMax'}} = {{getItemLimit(item.Reward[0].name)}}
+                    </p>
+                  </div>
+                </div>
+                
+                <div class="recipe-section ingredients-section">
+                  <h4 class="recipe-section-title">{{language.IngredientsLabel || 'Ingredients:'}}</h4>
+                  <div class="item-list">
+                    <div class="item" v-for="(ingredient, idx) in item.Items" :key="'ing-'+idx">
+                      <div
+                        class="item-icon"
+                        :style="{ backgroundImage: getItemImageUrl(ingredient.name) }"
+                        role="img" :aria-label="getItemDisplayLabel(ingredient.name)"
+                      ></div>
+                      <span>{{getItemDisplayLabel(ingredient.name)}} × {{ingredient.count}}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="recipe-section reward-section">
+                  <h4 class="recipe-section-title">{{language.RewardLabel || 'Reward:'}}</h4>
+                  <div class="item-list">
+                    <div class="item" v-for="(reward, idx) in item.Reward" :key="'reward-'+idx">
+                      <div
+                        class="item-icon"
+                        :style="{ backgroundImage: getItemImageUrl(reward.name) }"
+                        role="img" :aria-label="getItemDisplayLabel(reward.name)"
+                      ></div>
+                      <span>{{getItemDisplayLabel(reward.name)}} × {{reward.count}}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category specific Recipe Cards -->
+          <div v-for="(cata, index) in Object.keys(consumables)" :key="'catitems'+index" v-show="currentRoute === cata">
+            <div class="recipes-grid">
+              <div 
+                v-for="(item, itemIndex) in filteredCategoryItems(cata)" 
+                :key="'catitem-'+itemIndex" 
+                class="recipe-card" 
+                :data-category="item.Category"
+                @click="handleItemClick(item)"
+                tabindex="0"
+              >
+                <div class="recipe-card-content">
+                  <div class="recipe-card-header">
+                    <div class="recipe-card-image-wrapper">
+                      <div
+                        class="recipe-card-image"
+                        :style="{ backgroundImage: getItemImageUrl(item.Reward && item.Reward.length > 0 ? item.Reward[0].name : 'placeholder') }"
+                        role="img" :aria-label="item.Text"
+                      ></div>
+                    </div>
+                    <div class="recipe-card-info">
+                      <h3 class="recipe-card-title">{{item.Text}}</h3>
+                      <!-- Replace SubText with item limit from Reward -->
+                      <p v-if="item.Reward && item.Reward.length > 0 && getItemLimit(item.Reward[0].name)" class="recipe-card-subtext">
+                        {{language.InvMax || 'InvMax'}} = {{getItemLimit(item.Reward[0].name)}}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div class="recipe-section ingredients-section">
+                    <h4 class="recipe-section-title">{{language.IngredientsLabel || 'Ingredients:'}}</h4>
+                    <div class="item-list">
+                      <div class="item" v-for="(ingredient, idx) in item.Items" :key="'ing-'+idx">
+                        <div
+                          class="item-icon"
+                          :style="{ backgroundImage: getItemImageUrl(ingredient.name) }"
+                          role="img" :aria-label="getItemDisplayLabel(ingredient.name)"
+                        ></div>
+                        <span>{{getItemDisplayLabel(ingredient.name)}} × {{ingredient.count}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="recipe-section reward-section">
+                    <h4 class="recipe-section-title">{{language.RewardLabel || 'Reward:'}}</h4>
+                    <div class="item-list">
+                      <div class="item" v-for="(reward, idx) in item.Reward" :key="'reward-'+idx">
+                        <div
+                          class="item-icon"
+                          :style="{ backgroundImage: getItemImageUrl(reward.name) }"
+                          role="img" :aria-label="getItemDisplayLabel(reward.name)"
+                        ></div>
+                        <span>{{getItemDisplayLabel(reward.name)}} × {{reward.count}}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom controls -->
+          <div class="bottom-controls">
+            <div class="control-button exit-button" @click="closeView()">
+              {{language.ExitButton}}
+            </div>
+          </div>
+
+          <!-- No recipes message -->
+          <div v-if="noRecipesFound" class="no-recipes-message">
+            {{language.NoRecipesFound || 'No recipes found matching your search'}}
+          </div>
+        </div>
+
+        <!-- Quantity Input Dialog -->
+        <div v-if="showInput" class="quantity-dialog">
+          <div class="dialog-content">
+            <h3>{{InputCraftText}}</h3>
+            
+            <div class="quantity-controls">
+              <div class="quantity-button decrease" @click="decrease">-</div>
+              <input type="number" class="quantity-input" v-model="quantity" @keyup="formatQuantity" />
+              <div class="quantity-button increase" @click="increase">+</div>
+            </div>
+            
+            <div class="dialog-buttons">
+              <div class="dialog-button craft-button" @click="craftItem">
+                {{language.InputCraft}}{{ quantity > 1 ? 's' : '' }}
+              </div>
+              <div class="dialog-button cancel-button" @click="showInput = false">
+                {{language.InputCancel}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
+<script src="vendor/vue.js"></script>
+<script src="app.js"></script>
