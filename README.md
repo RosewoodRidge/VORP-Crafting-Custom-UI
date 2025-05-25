@@ -53,7 +53,7 @@ For those using this GitHub version: The config file has been removed to avoid o
 ## Credits
 
 - Original VORP Crafting script by VORP team (@blue)
-- UI Redesign by [Your Name/Rosewood Ridge]
+- UI Redesign by [Poggy/Rosewood Ridge]
 - Special thanks to the Rosewood Ridge community
 
 
