@@ -56,4 +56,34 @@ For those using this GitHub version: The config file has been removed to avoid o
 - UI Redesign by [Poggy/Rosewood Ridge]
 - Special thanks to the Rosewood Ridge community
 
+## Changelog
+
+### Item Description & Crafting Logic Enhancements
+
+*   **Inventory-Aware Crafting Limits:**
+    *   Implemented logic to calculate the maximum craftable quantity of an item based not only on available ingredients but also on the player's current inventory count and the maximum stack limit for the reward item.
+    *   The "Craft Max" button and quantity input now respect this new `effectiveMaxCraftable` limit, preventing players from crafting more than they can carry.
+*   **Enhanced UI Display:**
+    *   Recipe cards now display:
+        *   The number of items the player can craft based on ingredients (`Can craft: X`).
+        *   The player's current inventory count and maximum stack limit for the primary reward item (`In inventory: Y (max: Z)`), if a limit is set.
+    *   The quantity input dialog now provides a detailed breakdown:
+        *   Max craftable from ingredients.
+        *   Max craftable based on inventory space for the reward.
+        *   The `Effective max` (the lower of the two).
+*   **Item Image Handling:**
+    *   Corrected an issue where ingredient and reward item images were not displaying. Styles for `.item-icon` and `.item-list` were restored.
+*   **Recipe Card Layout:**
+    *   Adjusted CSS for recipe cards (`.recipe-card-content`, `.craftable-section`) to ensure the "Can craft" information section is consistently positioned at the bottom of each card, improving visual consistency across recipes with varying content lengths.
+*   **Item Description Display (from previous session):**
+    *   Implemented server-side logic (`vorp_crafting/server/server.lua`) to fetch item details, including the `desc` field, from the `items` database table.
+    *   Added client-side functionality (`vorp_crafting/client/client.lua`) to request this item data.
+    *   Updated `vorp_crafting/ui/app.js` to receive and store this item data (`ServerItems`).
+    *   Modified `vorp_crafting/ui/index.html` to display the item description from `ServerItems` on recipe cards.
+*   **NUI Data Handling (from previous session):**
+    *   Refined `onMessage` in `vorp_crafting/ui/app.js` for `vorp-craft-items-data`.
+*   **Database Interaction (from previous session):**
+    *   Ensured SQL query in `vorp_crafting/server/server.lua` correctly selects `item`, `label`, `desc`, and `limit`.
+    *   Standardized key usage in `itemsData` on the server.
+
 

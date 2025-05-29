@@ -184,6 +184,9 @@ RegisterNetEvent('vorp:startcrafting', function(craftable, countz)
             TriggerClientEvent("vorp:TipRight", _source, _U('TooFull'), 3000)
         end
     end
+
+    -- After successful crafting, trigger inventory update
+    TriggerEvent('vorp-craft:craftingCompleted')
 end)
 
 -- Helper function to get real item labels from vorp_inventory database
@@ -251,4 +254,49 @@ end)
 Core.Callback.Register("vorp_crafting:GetPlayerInventory", function(source, cb)
     local inventory = exports.vorp_inventory:getUserInventoryItems(source)
     cb(inventory)
+end)
+
+local VorpCore = {}
+
+TriggerEvent("getCore", function(core)
+    VorpCore = core
+end)
+
+-- Function to get player's current inventory
+local function GetPlayerInventory(source)
+    local User = VorpCore.getUser(source)
+    if not User then return {} end
+    
+    local Character = User.getUsedCharacter
+    if not Character then return {} end
+    
+    local inventory = {}
+    -- Get player's inventory items
+    -- This will depend on your inventory system implementation
+    -- Example for VORP inventory:
+    exports.vorp_inventory:getUserInventory(source, function(data)
+        if data then
+            for _, item in pairs(data) do
+                inventory[item.name] = item.count or 0
+            end
+        end
+    end)
+    
+    return inventory
+end
+
+-- Function to send updated inventory to client
+local function SendInventoryUpdate(source)
+    local inventory = GetPlayerInventory(source)
+    TriggerClientEvent('vorp-craft:updateInventory', source, inventory)
+end
+
+-- Register callback for when crafting is completed
+RegisterServerEvent('vorp-craft:craftingCompleted')
+AddEventHandler('vorp-craft:craftingCompleted', function()
+    local source = source
+    -- Send updated inventory after a short delay to ensure all transactions are complete
+    Citizen.SetTimeout(100, function()
+        SendInventoryUpdate(source)
+    end)
 end)

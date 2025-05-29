@@ -5,7 +5,7 @@
   /* Base UI Colors */
   --primary-color: #18191c;
   --accent-color: #44464a;
-  --highlight-color: #a26f45;
+  --highlight-color: #b4b4b4;
   --text-color: #e6e6e6;
   --text-secondary: #a0a0a0;
   --card-background: #232326;
@@ -243,8 +243,10 @@ body {
 
 .recipe-card-content {
   padding: 1rem;
-  display: flex; /* Added to help with layout if needed */
-  flex-direction: column; /* Added */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 280px; /* Ensure consistent minimum height */
 }
 
 /* New styles for recipe card header */
@@ -298,13 +300,39 @@ body {
   margin-top: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
+  flex-grow: 0; /* Don't allow sections to grow */
 }
 
-.recipe-section-title {
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  color: var(--text-secondary);
+/* New styles for craftable section */
+.craftable-section {
+  border-top: none;
+  padding-top: 0.5rem;
+  margin-top: auto; /* Push to bottom */
+  flex-grow: 0;
+}
+
+.craftable-count {
+  font-size: 0.85rem;
+  color: var(--highlight-color);
   font-weight: 600;
+  text-align: center;
+  padding: 0.4rem 0.6rem;
+  background-color: rgba(153, 153, 153, 0.15);
+  border-radius: 4px;
+  border: 1px solid rgba(161, 161, 161, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.craftable-ingredients {
+  color: var(--highlight-color);
+}
+
+.inventory-space {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .item-list {
@@ -331,6 +359,35 @@ body {
   background-color: rgba(0,0,0,0.1); 
   border-radius: 3px; 
   flex-shrink: 0; /* Prevent icon from shrinking if item text is long */
+}
+
+/* Enhanced max craftable info styling */
+.max-craftable-info {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  padding: 0.6rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.craftable-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.craftable-breakdown > div {
+  padding: 0.2rem 0;
+}
+
+.effective-max {
+  font-weight: 600;
+  color: var(--highlight-color);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.4rem !important;
+  margin-top: 0.2rem;
 }
 
 /* Bottom Controls */
@@ -446,6 +503,7 @@ body {
   display: flex;
   gap: 1rem;
   width: 100%;
+  flex-wrap: wrap;
 }
 
 .dialog-button {
@@ -456,14 +514,15 @@ body {
   cursor: pointer;
   transition: var(--transition-standard);
   font-weight: bold;
+  min-width: 120px;
 }
 
 .craft-button {
-  background-color: var(--highlight-color);
+  background-color: #2e43a3;
 }
 
 .craft-button:hover {
-  background-color: #b57d4e;
+  background-color: #6071be;
 }
 
 .cancel-button {
@@ -472,6 +531,25 @@ body {
 
 .cancel-button:hover {
   background-color: rgba(80, 80, 80, 0.8);
+}
+
+.craft-max-button {
+  background-color: #5a8a5a;
+}
+
+.craft-max-button:hover {
+  background-color: #6a9a6a;
+}
+
+/* Max craftable info styling */
+.max-craftable-info {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  padding: 0.6rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
 }
 
 /* No Recipes Message */
@@ -522,5 +600,13 @@ body {
   
   .inventory-toggle {
     margin-top: 0.5rem;
+  }
+  
+  .dialog-buttons {
+    flex-direction: column;
+  }
+  
+  .dialog-button {
+    flex: none;
   }
 }

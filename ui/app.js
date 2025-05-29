@@ -159,6 +159,23 @@ createApp({
       } else {
         return this.filteredCategoryItems(this.currentRoute).length === 0;
       }
+    },
+    
+    // Get maximum craftable quantity for the active recipe
+    maxCraftableQuantity() {
+      if (!this.activeCraftable || !this.activeCraftable.Items) return 1;
+      
+      return this.calculateMaxCraftable(this.activeCraftable);
+    },
+    
+    // Get the effective maximum considering both crafting limits and inventory space
+    effectiveMaxCraftable() {
+      if (!this.activeCraftable) return 1;
+      
+      const maxFromIngredients = this.calculateMaxCraftable(this.activeCraftable);
+      const maxFromInventorySpace = this.calculateMaxCraftableByInventorySpace(this.activeCraftable);
+      
+      return Math.min(maxFromIngredients, maxFromInventorySpace);
     }
   },
   methods: {
@@ -170,6 +187,13 @@ createApp({
           break;
         case "vorp-craft-animate":
           this.animationPlaying();
+          break;
+        case "vorp-craft-inventory-update":
+          // Handle inventory updates from server
+          if (event.data.inventory) {
+            this.inventory = event.data.inventory;
+            this.$forceUpdate();
+          }
           break;
         default:
           break;
@@ -255,6 +279,9 @@ createApp({
           location: this.location
         })
       }).then(resp => resp.json()).then(resp => {
+        // Update inventory after successful crafting
+        this.updateInventoryAfterCrafting(this.activeCraftable, this.quantity);
+        
         this.showInput = false;
         this.activeCraftable = null;
         this.quantity = 1;
@@ -263,9 +290,105 @@ createApp({
       });
     },
     
+    // Update local inventory after crafting to reflect new amounts
+    updateInventoryAfterCrafting(recipe, quantity) {
+      if (!recipe.Items) return;
+      
+      // Subtract ingredients used
+      recipe.Items.forEach(ingredient => {
+        const totalUsed = ingredient.count * quantity;
+        if (this.inventory[ingredient.name]) {
+          this.inventory[ingredient.name] = Math.max(0, this.inventory[ingredient.name] - totalUsed);
+        }
+      });
+      
+      // Add rewards received (if tracking inventory for rewards)
+      if (recipe.Reward) {
+        recipe.Reward.forEach(reward => {
+          const totalReceived = reward.count * quantity;
+          if (this.inventory[reward.name]) {
+            this.inventory[reward.name] += totalReceived;
+          } else {
+            this.inventory[reward.name] = totalReceived;
+          }
+        });
+      }
+      
+      // Force reactivity update
+      this.$forceUpdate();
+    },
+    
     handleItemClick(data) {
       this.activeCraftable = data;
       this.showInput = true;
+    },
+    
+    // Calculate how many times a recipe can be crafted based on inventory
+    calculateMaxCraftable(recipe) {
+      if (!recipe.Items || !recipe.Items.length) return 999; // No ingredients required
+      
+      let maxCraftable = 999;
+      
+      for (const ingredient of recipe.Items) {
+        const requiredCount = ingredient.count;
+        const playerCount = this.inventory[ingredient.name] || 0;
+        const possibleCrafts = Math.floor(playerCount / requiredCount);
+        
+        if (possibleCrafts < maxCraftable) {
+          maxCraftable = possibleCrafts;
+        }
+      }
+      
+      return Math.max(0, maxCraftable);
+    },
+    
+    // Calculate max craftable based on inventory space for the reward items
+    calculateMaxCraftableByInventorySpace(recipe) {
+      if (!recipe.Reward || !recipe.Reward.length) return 999;
+      
+      let maxCraftable = 999;
+      
+      for (const reward of recipe.Reward) {
+        const currentCount = this.inventory[reward.name] || 0;
+        const maxLimit = this.getItemLimit(reward.name);
+        const rewardPerCraft = reward.count;
+        
+        if (maxLimit > 0) { // Only check if there's a limit set
+          const availableSpace = maxLimit - currentCount;
+          const possibleCrafts = Math.floor(availableSpace / rewardPerCraft);
+          
+          if (possibleCrafts < maxCraftable) {
+            maxCraftable = possibleCrafts;
+          }
+        }
+      }
+      
+      return Math.max(0, maxCraftable);
+    },
+    
+    // Get inventory information for a specific reward item
+    getInventoryInfo(recipe) {
+      if (!recipe.Reward || !recipe.Reward.length) {
+        return { current: 0, max: 0, canFit: 999 };
+      }
+      
+      const primaryReward = recipe.Reward[0]; // Use the first reward item for display
+      const current = this.inventory[primaryReward.name] || 0;
+      const max = this.getItemLimit(primaryReward.name) || 0;
+      const rewardPerCraft = primaryReward.count;
+      
+      let canFit = 999;
+      if (max > 0) {
+        const availableSpace = max - current;
+        canFit = Math.floor(availableSpace / rewardPerCraft);
+      }
+      
+      return { current, max, canFit };
+    },
+    
+    // Set quantity to effective maximum (considering both ingredients and inventory space)
+    setMaxQuantity() {
+      this.quantity = this.effectiveMaxCraftable;
     },
     
     formatQuantity() {
@@ -273,8 +396,10 @@ createApp({
           this.quantity = this.min;
       }
 
-      if (this.quantity > this.max) {
-          this.quantity = this.max;
+      // Use the effective max that considers both ingredients and inventory space
+      const effectiveMax = Math.min(this.max, this.effectiveMaxCraftable);
+      if (this.quantity > effectiveMax) {
+          this.quantity = effectiveMax;
       }
     },
     
@@ -282,8 +407,10 @@ createApp({
         let value = this.quantity;
         value = isNaN(value) ? this.min : value;
 
-        if (value >= this.max) {
-            value = this.max - 1;
+        // Use the effective max that considers both ingredients and inventory space
+        const effectiveMax = Math.min(this.max, this.effectiveMaxCraftable);
+        if (value >= effectiveMax) {
+            value = effectiveMax - 1;
         }
 
         value++;

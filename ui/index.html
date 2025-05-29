@@ -112,6 +112,19 @@
                     </div>
                   </div>
                 </div>
+                
+                <!-- Craftable quantity display -->
+                <div class="recipe-section craftable-section">
+                  <div class="craftable-count">
+                    <div class="craftable-ingredients">
+                      {{language.CanCraftLabel || 'Can craft:'}} {{calculateMaxCraftable(item)}}
+                    </div>
+                    <div v-if="getInventoryInfo(item).max > 0" class="inventory-space">
+                      {{language.InInventoryLabel || 'In inventory:'}} {{getInventoryInfo(item).current}} 
+                      ({{language.MaxLabel || 'max:'}} {{getInventoryInfo(item).max}})
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -172,6 +185,19 @@
                       </div>
                     </div>
                   </div>
+                  
+                  <!-- Craftable quantity display -->
+                  <div class="recipe-section craftable-section">
+                    <div class="craftable-count">
+                      <div class="craftable-ingredients">
+                        {{language.CanCraftLabel || 'Can craft:'}} {{calculateMaxCraftable(item)}}
+                      </div>
+                      <div v-if="getInventoryInfo(item).max > 0" class="inventory-space">
+                        {{language.InInventoryLabel || 'In inventory:'}} {{getInventoryInfo(item).current}} 
+                        ({{language.MaxLabel || 'max:'}} {{getInventoryInfo(item).max}})
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -201,9 +227,25 @@
               <div class="quantity-button increase" @click="increase">+</div>
             </div>
             
+            <!-- Enhanced max craftable info -->
+            <div class="max-craftable-info">
+              <div class="craftable-breakdown">
+                <div>{{language.FromIngredientsLabel || 'From ingredients:'}} {{maxCraftableQuantity}}</div>
+                <div v-if="getInventoryInfo(activeCraftable).max > 0">
+                  {{language.InventorySpaceLabel || 'Inventory space for:'}} {{getInventoryInfo(activeCraftable).canFit}}
+                </div>
+                <div class="effective-max">
+                  {{language.EffectiveMaxLabel || 'Effective max:'}} {{effectiveMaxCraftable}}
+                </div>
+              </div>
+            </div>
+            
             <div class="dialog-buttons">
               <div class="dialog-button craft-button" @click="craftItem">
                 {{language.InputCraft}}{{ quantity > 1 ? 's' : '' }}
+              </div>
+              <div class="dialog-button craft-max-button" @click="setMaxQuantity" v-if="effectiveMaxCraftable > 1">
+                {{language.CraftMaxButton || 'Craft Max'}} ({{effectiveMaxCraftable}})
               </div>
               <div class="dialog-button cancel-button" @click="showInput = false">
                 {{language.InputCancel}}

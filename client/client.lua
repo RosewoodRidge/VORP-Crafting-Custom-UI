@@ -103,3 +103,21 @@ AddEventHandler("vorp:crafting", function(animation)
         iscrafting = false
     end)
 end)
+
+-- Register event to receive inventory updates from server
+RegisterNetEvent('vorp-craft:updateInventory')
+AddEventHandler('vorp-craft:updateInventory', function(inventory)
+    -- Send the updated inventory to the NUI
+    SendNUIMessage({
+        type = "vorp-craft-inventory-update",
+        inventory = inventory
+    })
+end)
+
+-- Example of existing crafting event - modify your existing implementation
+RegisterNUICallback('vorp-craftevent', function(data, cb)
+    -- ... your existing crafting logic ...
+
+    -- After crafting is complete, the server will automatically send inventory update
+    cb('ok')
+end)
